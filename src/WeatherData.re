@@ -25,6 +25,9 @@ let getWeather = () =>
     |> then_(Bs_fetch.Response.text)
     |> then_(jsonText => {
          let result = parseWeatherResultsJson(jsonText);
-         resolve(result);
+         switch (result) {
+         | exception e => reject(e)
+         | weather => resolve(weather)
+         };
        })
   );

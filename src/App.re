@@ -2,9 +2,14 @@
 
 [@bs.module] external logo : string = "./logo.svg";
 
-type state = {weather: option(WeatherData.weather)};
+type optionOrError('a) =
+  | Some('a)
+  | None
+  | Error;
+type state = {weather: optionOrError(WeatherData.weather)};
 type action =
-  | WeatherLoaded(WeatherData.weather);
+  | WeatherLoaded(WeatherData.weather)
+  | WeatherError;
 
 let dummyWeather: WeatherData.weather = {
   summary: "Warn throughout the day",
@@ -19,12 +24,18 @@ let make = (~message, _children) => {
   reducer: (action, _prevState) =>
     switch (action) {
     | WeatherLoaded(weather) => ReasonReact.Update({weather: Some(weather)})
+    | WeatherError => ReasonReact.Update({weather: Error})
     },
   didMount: self => {
     let handleWeatherLoaded = weather => self.send(WeatherLoaded(weather));
+    let handleWeatherError = () => self.send(WeatherError);
     WeatherData.getWeather()
     |> Js.Promise.then_(weather => {
          handleWeatherLoaded(weather);
+         Js.Promise.resolve();
+       })
+    |> Js.Promise.catch(_err => {
+         handleWeatherError();
          Js.Promise.resolve();
        })
     |> ignore;
